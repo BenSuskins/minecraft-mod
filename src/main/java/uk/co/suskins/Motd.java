@@ -11,12 +11,24 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public class Motd implements ModInitializer {
 
     private String motd = "New default!";
     private MinecraftServer server;
+
+    private static final Formatting[] RAINBOW_COLORS = {
+            Formatting.RED,
+            Formatting.GOLD,
+            Formatting.YELLOW,
+            Formatting.GREEN,
+            Formatting.AQUA,
+            Formatting.BLUE,
+            Formatting.LIGHT_PURPLE
+    };
 
     @Override
     public void onInitialize() {
@@ -24,7 +36,7 @@ public class Motd implements ModInitializer {
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
-            player.sendMessage(Text.literal(motd), false);
+            player.sendMessage(getRainbowText(motd), false);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> this.server = server);
@@ -49,5 +61,15 @@ public class Motd implements ModInitializer {
                     context.getSource().sendFeedback(() -> Text.literal(motd), false);
                     return 1;
                 }));
+    }
+
+    private MutableText getRainbowText(String input) {
+        MutableText rainbowText = Text.literal("");
+        int colorIndex = 0;
+        for (char c : input.toCharArray()) {
+            rainbowText.append(Text.literal(String.valueOf(c)).formatted(RAINBOW_COLORS[colorIndex]));
+            colorIndex = (colorIndex + 1) % RAINBOW_COLORS.length;
+        }
+        return rainbowText;
     }
 }
