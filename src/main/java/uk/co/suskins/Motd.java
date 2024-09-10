@@ -15,61 +15,50 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.io.File;
+
 public class Motd implements ModInitializer {
 
-    private String motd = "New default!";
     private MinecraftServer server;
-
-    private static final Formatting[] RAINBOW_COLORS = {
-            Formatting.RED,
-            Formatting.GOLD,
-            Formatting.YELLOW,
-            Formatting.GREEN,
-            Formatting.AQUA,
-            Formatting.BLUE,
-            Formatting.LIGHT_PURPLE
-    };
+    private MotdConfig motdConfig;
 
     @Override
     public void onInitialize() {
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            this.server = server;
+            File configDir = server.getRunDirectory().toFile();
+            motdConfig = new MotdConfig();
+            motdConfig.loadConfig(configDir);
+        });
+
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
-            player.sendMessage(getRainbowText(motd), false);
+            player.sendMessage(Text.literal(motdConfig.getMotd()), false);
         });
-
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> this.server = server);
     }
 
-    private void registerCommands(CommandDispatcher<ServerCommandSource> serverCommandSourceCommandDispatcher,
-                                  CommandRegistryAccess commandRegistryAccess,
-                                  CommandManager.RegistrationEnvironment registrationEnvironment) {
-        serverCommandSourceCommandDispatcher.register(CommandManager.literal("setmotd")
+    private void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher,
+                                  CommandRegistryAccess registryAccess,
+                                  CommandManager.RegistrationEnvironment env) {
+        dispatcher.register(CommandManager.literal("setmotd")
                 .requires(source -> source.hasPermissionLevel(2))
                 .then(CommandManager.argument("motd", StringArgumentType.greedyString())
                         .executes(context -> {
-                            motd = StringArgumentType.getString(context, "motd");
-                            context.getSource().sendFeedback(() -> Text.literal("MOTD set to: " + motd), true);
+                            String newMotd = StringArgumentType.getString(context, "motd");
+                            motdConfig.setMotd(newMotd);
+                            motdConfig.saveConfig(server.getRunDirectory().toFile());
+                            context.getSource().sendFeedback(() -> Text.literal("MOTD set to: " + newMotd), true);
                             return 1;
                         })
                 )
         );
 
-        serverCommandSourceCommandDispatcher.register(CommandManager.literal("motd")
+        dispatcher.register(CommandManager.literal("motd")
                 .executes(context -> {
-                    context.getSource().sendFeedback(() -> Text.literal(motd), false);
+                    context.getSource().sendFeedback(() -> Text.literal(motdConfig.getMotd()), false);
                     return 1;
                 }));
-    }
-
-    private MutableText getRainbowText(String input) {
-        MutableText rainbowText = Text.literal("");
-        int colorIndex = 0;
-        for (char c : input.toCharArray()) {
-            rainbowText.append(Text.literal(String.valueOf(c)).formatted(RAINBOW_COLORS[colorIndex]));
-            colorIndex = (colorIndex + 1) % RAINBOW_COLORS.length;
-        }
-        return rainbowText;
     }
 }
