@@ -17,18 +17,8 @@
 	"entrypoints": {
 		"main": [
 			"uk.co.suskins.Motd"
-		],
-		"client": [
-			"uk.co.suskins.MotdClient"
 		]
 	},
-	"mixins": [
-		"motd.mixins.json",
-		{
-			"config": "motd.client.mixins.json",
-			"environment": "client"
-		}
-	],
 	"depends": {
 		"fabricloader": ">=0.16.5",
 		"minecraft": "~1.21.1",
