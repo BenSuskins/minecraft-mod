@@ -15,21 +15,18 @@ import net.minecraft.text.Text;
 
 public class Motd implements ModInitializer {
 
-    private String motd = "Welcome to the server!"; // Default MOTD
+    private String motd = "New default!";
     private MinecraftServer server;
 
     @Override
     public void onInitialize() {
-        // Register commands to set the MOTD
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
 
-        // Listen for when a player joins
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
             player.sendMessage(Text.literal(motd), false);
         });
 
-        // Listen for server start to set the server object
         ServerLifecycleEvents.SERVER_STARTED.register(server -> this.server = server);
     }
 
@@ -37,7 +34,7 @@ public class Motd implements ModInitializer {
                                   CommandRegistryAccess commandRegistryAccess,
                                   CommandManager.RegistrationEnvironment registrationEnvironment) {
         serverCommandSourceCommandDispatcher.register(CommandManager.literal("setmotd")
-                .requires(source -> source.hasPermissionLevel(2)) // Requires OP level 2 (Server Operators)
+                .requires(source -> source.hasPermissionLevel(2))
                 .then(CommandManager.argument("motd", StringArgumentType.greedyString())
                         .executes(context -> {
                             motd = StringArgumentType.getString(context, "motd");
@@ -46,5 +43,11 @@ public class Motd implements ModInitializer {
                         })
                 )
         );
+
+        serverCommandSourceCommandDispatcher.register(CommandManager.literal("motd")
+                .executes(context -> {
+                    context.getSource().sendFeedback(() -> Text.literal(motd), false);
+                    return 1;
+                }));
     }
 }
